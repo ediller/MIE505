@@ -41,10 +41,9 @@ Contents
 ### Installation
 
 
-```
 The best installation process is to completely copy the SD card from the Raspberry Pi to a new flash card. Use the SD Card Copier utility on the Raspberry Pi, with the USB-SD reader adapter.
 Follow instructions in Eric's Install instructions if the system needs to be installed on a new Pi. 
-```
+
 
 ### How to run
 
