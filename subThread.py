@@ -24,7 +24,7 @@ def subthreadNotDefined():
 class SubThread(QThread):
     statusSignal = pyqtSignal(str)
 
-    def __init__(self,field,vision,joystick=None,parent=None,):
+    def __init__(self,field,vision,tensile,joystick=None,parent=None):
         super(SubThread, self).__init__(parent)
         #print('in subthread init')
         self.stopped = False
@@ -32,6 +32,8 @@ class SubThread(QThread):
         self.field = field
         self.vision = vision
         self.joystick = joystick
+        self.tensile = tensile # added here
+        self.distance = 0 # for tensile test
         self._subthreadName = ''
         self.params = [0, 0, 0, 0, 0]
         self.labelOnGui = {
@@ -90,14 +92,18 @@ class SubThread(QThread):
                 'N/A'
                 ],
             'gripper_joystick_ctrl':['N/A', 'N/A', 'N/A', 'N/A', 'N/A'],
-            'default':['param0', 'param1', 'param2', 'param3', 'param4']
+            'tensileTest': ['Speed (mm/min)','Hysteresis (0 or 1)','Number of cycles','% strain','N/A'],
+            'default':['param0', 'param1', 'param2', 'param3', 'param4'],
             }
         self.defaultValOnGui = {
             'twistField':[0, 0, 0, 0, 0],
             'drawing':[0, 0, 0, 1, 0],
             'swimmerPathFollowing':[-20, 2, 0, 0, 0],
             'tianqiGripper':[0, 15, 0.5, 0, 0],
-            'default':[0, 0, 0, 0, 0]
+            'tensileTest': [0, 0, 0, 0, 0],
+            'default':[0, 0, 0, 0, 0],
+            
+            
             }
         self.minOnGui = {
             'twistField':[-100, 0, -1080, 0, 0],
@@ -113,7 +119,9 @@ class SubThread(QThread):
             'examplePiecewiseFunction':[-20, 0, -360, 0, 0],
             'swimmerPathFollowing':[-100, 0, 0, 0, 0],
             'tianqiGripper':[0, 0, 0, -720, 0],
+            'tensileTest': [0.5, 0, 0, 0, 0],
             'default':[0, 0, 0, 0, 0]
+            
             }
         self.maxOnGui = {
             'twistField':[100, 14, 1080, 180, 360],
@@ -131,7 +139,9 @@ class SubThread(QThread):
             'swimmerPathFollowing':[100, 20, 360, 0, 0],
             'swimmerBenchmark':[360, 0, 0, 0, 0],
             'tianqiGripper':[10, 20, 120, 720, 0],
+            'tensileTest': [10, 1, 5, 0.9, 0],
             'default':[0, 0, 0, 0, 0]
+            
             }
 
     def setup(self,subThreadName):
@@ -803,3 +813,65 @@ class SubThread(QThread):
             # print(azimuth)
             if self.stopped:
                 return
+    
+    def tensileTest(self):
+        #=============================
+        # reference params
+        # 0 'Speed' (mm/min)'
+        # 1 'Hysteresis 0 or 1'
+        # 2 'Number of cycles'
+        # 3 '% stretch'
+        #=============================
+        
+        strain = 0 # initialize the strain
+        strainback = 0 # initialize the strain
+        
+        count = 0 # count the times the motor moves
+        countback = 0 # count the times the motor moves the other way
+        cycle = 0 # initialize the cycle for hysteresis testing
+        
+        initial_length = 10 # initial length of sample in mm
+        mm_per_step = 5/200 # 5mm for 200 revolutions for the motor
+        
+        speed = self.params[0] # speed in mm/min
+        hysteresis = self.params[1] # hysteresis 0 or 1
+        num_cycles = self.params[2] # number of cycles
+        percent_stretch = self.params[3] # % stretch
+        
+        while True:
+                # see if there needs to be hysteresis test
+                if hysteresis == 0: # no hysteresis run until user manually stops
+                    self.tensile.setSpeed(speed,0) # set the speed specified by user
+                    count += 1 # counts/number of steps of motor
+                    self.distance = (mm_per_step)*count # mm travelled
+                    print('distance travelled', self.distance, 'mm')
+                elif hysteresis == 1: # hysteresis test, move back and forth up to the specified % stretch point              
+                    if strain < percent_stretch: # motor stretches the sample
+                        self.tensile.setSpeed(speed,0)
+                        count += 1 # add the counts/motor steps
+                        self.distance = mm_per_step*count # mm travelled
+                        strain = self.distance/initial_length # mm travelled based on count/ initial length (mm) of sample
+                        print('count', count,'distance', self.distance)
+                    elif strain >= percent_stretch and strainback < percent_stretch: # motor unstretches the sample
+                        self.tensile.setSpeed(speed,1)
+                        countback += 1 # add the counts/motor steps
+                        self.distance = -mm_per_step*countback # mm travelled in the opposite direction
+                        strainback = -self.distance/initial_length # mm travelled based on countback
+                        print('countback',countback,'distance', self.distance)
+                    else: # update cycle number
+                        count = 0 # restart the counts
+                        countback = 0 # restart the counts
+                        strain = 0 # restart the strain
+                        strainback = 0 # restart the strain
+                        cycle += 1 # add the cycle
+                    
+                        if cycle == num_cycles: # break the loop if the number cycles are reached
+                            print('======Cycle ended, manually stop thread in GUI=====')
+                            return
+                else:
+                    print('=====Hysteresis is either 0 or 1, manually stop thread in GUI=====')
+                    return
+            
+            
+                if self.stopped:
+                    return

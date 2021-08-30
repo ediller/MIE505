@@ -12,11 +12,13 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
 
     This class inherited matplotlib backend.
     """
-    def __init__(self):
+    def __init__(self,ylimRange,yaxislbl):
+    # User needs to specify ylimRange, yaxislbl 
+
         self.addedDataX = []
         self.addedDataY = []
         self.addedDataZ = []
-        self.ylimRange = [-20,20]
+        self.ylimRange = ylimRange
         self.isZoomed = False
         # print(matplotlib.__version__)
 
@@ -35,7 +37,7 @@ class CustomFigCanvas(FigureCanvas, TimedAnimation):
         self.fig.patch.set_facecolor((0.92, 0.92, 0.92))
         # Create the axes
         self.ax1 = self.fig.add_subplot(1,1,1)
-        self.ax1.set_ylabel('field XYZ')
+        self.ax1.set_ylabel(yaxislbl)
         # Line representing the Bx field
         self.line1 = Line2D([], [], color='blue')
         self.line1_tail = Line2D([], [], color='blue', linewidth=2)

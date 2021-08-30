@@ -1,15 +1,17 @@
 from PyQt5 import uic
 from PyQt5.QtCore import QTimer, Qt, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QFileDialog
 from fieldManager import FieldManager
 from vision import Vision
 from s826 import S826 #OLD when using S826 DAQ hardware
+from tensile import tensile
 from subThread import SubThread
 from vis_thread import Vis_Process_Thread
 from realTimePlot import CustomFigCanvas
 import syntax
 import numpy as np
 import time
+import os # added here
 
 #=========================================================
 # UI Config
@@ -18,11 +20,11 @@ qtCreatorFile = "mainwindow.ui"
 #qtCreatorFile = "testwindow.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 #=========================================================
-# Creating instances of fieldManager and Camera
+# Creating instances of fieldManager, Camera, and Tensile tester
 #=========================================================
 field = FieldManager(S826()) #OLD when using S826 DAQ board
 vision = Vision()
-
+tensile = tensile()
 # to use 1 camera only, comment out this line:    vision2 = ...
 #=========================================================
 # Creating instances of PS3 controller
@@ -42,11 +44,12 @@ class GUI(QMainWindow,Ui_MainWindow):
         self.setupUi(self)
         self.setupTimer()
         
-        self.setupSubThread(field,vision)
+        self.setupSubThread(field,vision,tensile)
         
 
         # comment out this line if you don't want a preview window
         self.setupRealTimePlot()
+
         
         self.connectSignals()
         self.linkWidgets()
@@ -106,7 +109,13 @@ class GUI(QMainWindow,Ui_MainWindow):
             pass
         else:
             joystick.update()
-
+        
+        try: #added for tensile tester
+            self.realTimePlot2
+        except AttributeError:
+            pass
+        else:
+            self.updatePlot2()
 
     #=====================================================
     # Connect buttons etc. of the GUI to callback functions
@@ -145,6 +154,11 @@ class GUI(QMainWindow,Ui_MainWindow):
         self.dsb_subThreadParam3.valueChanged.connect(self.thrd.setParam3)
         self.dsb_subThreadParam4.valueChanged.connect(self.thrd.setParam4)
         
+        # tensile Tab
+        self.btn_adjustleft.clicked.connect(self.move_left)
+        self.btn_adjustright.clicked.connect(self.move_right)
+        self.btn_export.clicked.connect(self.on_export)
+                                
         
 
 
@@ -193,11 +207,11 @@ class GUI(QMainWindow,Ui_MainWindow):
     #=====================================================
     # Thread Example
     #=====================================================
-    def setupSubThread(self,field,vision,joystick=None):
+    def setupSubThread(self,field,vision,tensile,joystick=None):
         if joystick:
-            self.thrd = SubThread(field,vision,joystick)
+            self.thrd = SubThread(field,vision,tensile,joystick)
         else:
-            self.thrd = SubThread(field,vision)
+            self.thrd = SubThread(field,vision,tensile,None)
         self.thrd.statusSignal.connect(self.updateSubThreadStatus)
         self.thrd.finished.connect(self.finishSubThreadProcess)
 
@@ -224,7 +238,7 @@ class GUI(QMainWindow,Ui_MainWindow):
     # __init__.
     #=====================================================
     def setupRealTimePlot(self):
-        self.realTimePlot = CustomFigCanvas()
+        self.realTimePlot = CustomFigCanvas([-20, 20],'field xyz')
          # put the preview window in the layout
         self.LAYOUT_A.addWidget(self.realTimePlot, *(0,0))
          # connect qt signal to zoom funcion
@@ -271,7 +285,29 @@ class GUI(QMainWindow,Ui_MainWindow):
         self.label_zBact.setText('{0:0.1f}'.format(np.mean(self.bzEstBuf)))
         
         self.label_FPS.setText('{0:0.1f}'.format(vision.averageFPS)) #update FPS reading
-
+    
+    def setupRealTimePlot2(self):
+        self.realTimePlot2 = CustomFigCanvas([-3, 0],'force [N]')
+        # put the preview window in the layout
+        self.LAYOUT_B.addWidget(self.realTimePlot2,*(0,0))
+        # initialize the list to store force values
+        self.force_values = []
+        self.start_time = time.time() # get the start time
+    
+    def updatePlot2(self):
+        # update the GUI values for the force reading if the tensile thread is running
+        if self.chb_startStopSubthread.isChecked():
+            # update the force values on the plot
+            self.realTimePlot2.addDataX(tensile.load_force_reading())
+            self.realTimePlot2.addDataY(0) # filler value
+            self.realTimePlot2.addDataZ(0) # filler value
+            self.label_loadcell.setText('{0:0.2f}'.format(tensile.load_force_reading())+ ' N')
+            # store the force values and distance (mm) as the plot updates
+            self.force_values.append([self.thrd.distance, tensile.load_force_reading()])
+        else: # if the startstop button is not pressed, force label is stopped to prevent program from lagging
+            self.label_loadcell.setText('stopped')
+        
+        
     #=====================================================
     # Callback Functions
     #=====================================================
@@ -370,6 +406,11 @@ class GUI(QMainWindow,Ui_MainWindow):
             self.thrd.setup(subThreadName)
             self.thrd.start()
             print('Subthread "{}" starts.'.format(subThreadName))
+            
+            if subThreadName == 'tensileTest':
+                print('running tensile test')
+                self.setupRealTimePlot2() # only start the tensile plot when the start button is pressed so startup is faster
+                
         else:
             self.cbb_subThread.setEnabled(True)
             self.thrd.stop()
@@ -385,3 +426,22 @@ class GUI(QMainWindow,Ui_MainWindow):
         self.bxEstBuf = np.zeros(bufLength)
         self.byEstBuf = np.zeros(bufLength)
         self.bzEstBuf = np.zeros(bufLength)
+
+    # tensile tab
+    def move_left(self): # adjusting tensile gripper position
+        tensile.motor_change_dir(0)
+        tensile.motor_step()
+        
+    def move_right(self): # adjusting tensile gripper position
+        tensile.motor_change_dir(1)
+        tensile.motor_step()
+    
+    def on_export(self): # exporting force data into a csv        
+        # File dialog popup 
+        popup = QFileDialog.getSaveFileName(parent = self, caption = 'Select file',
+                                               directory = 'tensile.csv', initialFilter = 'CSV file (*.csv)')
+        # write time and force data into the file
+        filepath = popup[0] # get the saved filepath directory
+        with open(filepath,'w+') as fp:
+            for j in range(len(self.force_values)):
+                fp.write(str(self.force_values[j][0]) + ',' + str(self.force_values[j][1]) + '\n')

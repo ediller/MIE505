@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>785</width>
-    <height>639</height>
+    <width>787</width>
+    <height>914</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -651,6 +651,11 @@ p, li { white-space: pre-wrap; }
      </item>
      <item>
       <property name="text">
+       <string>tensileTest</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
        <string>gripper_joystick_ctrl</string>
       </property>
      </item>
@@ -1160,13 +1165,110 @@ p, li { white-space: pre-wrap; }
      </property>
     </widget>
    </widget>
+   <widget class="QGroupBox" name="groupBox_4">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>590</y>
+      <width>771</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Tensile tester</string>
+    </property>
+    <widget class="QLabel" name="label_loadcell">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>10</y>
+       <width>101</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>This space is for the real-time output from the load cell</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="horizontalLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>410</x>
+       <y>30</y>
+       <width>361</width>
+       <height>111</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_9">
+      <item>
+       <widget class="QLabel" name="label_14">
+        <property name="text">
+         <string>Adjust gripper position</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_adjustleft">
+        <property name="text">
+         <string>&lt;Left</string>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_adjustright">
+        <property name="text">
+         <string>Right &gt;</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QPushButton" name="btn_export">
+     <property name="geometry">
+      <rect>
+       <x>510</x>
+       <y>230</y>
+       <width>171</width>
+       <height>30</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Export/Save data</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>60</y>
+       <width>400</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="LAYOUT_B">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_13">
+        <property name="text">
+         <string>This space is for the real-time plot from the tensile tester</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>785</width>
+     <width>787</width>
      <height>27</height>
     </rect>
    </property>
