@@ -11,6 +11,7 @@ A Python3-based program for the coil system. Ported from C code.
 * Multithreading module for controlling multiple agents according to the feedback data from the cameras.
 * Preview window (60 Hz) for the X, Y, and Z magnetic field.
 * Controlling the magnetic field with a Joystick controller.
+* Control the tensile tester
             
 Contents
 --------------------
@@ -88,6 +89,10 @@ http://www.sensoray.com/products/826.htm
 ```
 sudo apt-get install qttools5-dev-tools
 ```
+7. HX711 load cell amplifier is used to read the load cell outputs
+```
+pip3 install HX711
+```
 
 ### How to run
 
@@ -135,7 +140,7 @@ callbacks.py
 │   	|   s826.py [control s826 I/O]
 │  
 │
-└───visoin.py [capture frames; apply filters; detect objects]
+└───vision.py [capture frames; apply filters; detect objects]
 │       │   filterlib.py [define filters]
 │       │   objectDetection.py [define object detection algorithms]
 |       |   drawing.py [allow users to draw line etc. in a subthread]
@@ -146,6 +151,8 @@ callbacks.py
 └───realTimePlot.py [plot a real-time preview window of the magnetic field]
 │
 └───PS3Controller.py [enable joystick/controllers]
+|
+└───tensile.py [read load cell and control motors for the tensile tester]
 
 ```
 ## Vision
