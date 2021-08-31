@@ -148,7 +148,7 @@ callbacks.py
 │
 └───subthread.py [run multithreading tasks]
 │
-└───realTimePlot.py [plot a real-time preview window of the magnetic field]
+└───realTimePlot.py [plot a real-time preview window of the magnetic field and preview window of the force for the tensile tester]
 │
 └───PS3Controller.py [enable joystick/controllers]
 |
